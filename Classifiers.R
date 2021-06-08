@@ -1,474 +1,304 @@
-##Algorithmic design 
+mPredict=function(ModelList,TestData,Indices,classes.df) { 
+  TrainPheno=classes.df[Indices,]
+  TestData=TestData[,!colnames(TestData) %in% TrainPheno$ID]
+  TestPheno=classes.df%>%filter(!ID %in% TrainPheno$ID)
+  Predictions.list=list()
+  OutputNames=names(ModelList)
+  for(i in 1:length(ModelList)){
+    Features=ModelList[[i]]$Model$finalModel$xNames
+    TestDataNew=TestData[match(Features,rownames(TestData)),]
+    Model=ModelList[[i]]$Model
+    Prediction.classProbs=predict(Model, newdata=t(TestDataNew), type="prob")%>%
+      data.frame
+    Prediction.classProbs$ActualClass=TestPheno$Classes
+    Prediction.classProbs$PredictedClass=predict(Model, newdata=t(TestDataNew), type="raw")
+    Predictions.list[[i]]=Prediction.classProbs}
+  names(Predictions.list)=OutputNames
+  return(Predictions.list)
+} 
 
-##For Each training set, create class-specific models
-#This involves - DMR selection - one-vs-all
-#GLMnet fitting by CV - binomial 
-#Estimating performance on test sets 
-
-SplitFunction <- function(Mat, Classes) {
-  
+mSplit=function(Count,Label,Num){
   require(dplyr)
   require(caret)
   require(glmnet)
-  
-  ##Split into training and test sets
-  
-  df <- data.frame(ID = colnames(Mat), Classes = Classes)
-  samples <- createDataPartition(df$Classes, p = 0.8,times = 100)
-  
-  return(list(df = df, samples = samples))
-  
-  
+  df=data.frame(ID=colnames(Count),Classes=Label)
+  splited=createDataPartition(df$Classes,p=0.8,times=Num)
+  return(list(df=df, samples=splited))
 }
 
 
-ModFunction <- function(Mat, classes.df, Indices) {
-  
-    
-  #Then, we apply an iterative process of DMR selection and model training for each 
-  #training set for each one vs all comparison
-  
-  
-    
-    TrainData <- Mat[,Indices]
-    TrainPheno <- classes.df[Indices,]
-    
-    TestData <- Mat[,!colnames(Mat) %in% TrainPheno$ID]
-    TestPheno <- classes.df%>%filter(!ID %in% TrainPheno$ID)
-    
-    
-  AllClasses.v <- unique(classes.df$Classes)  
-  ModList <- list()
-    
-  #Limma-trend preselection on the training partition 
-  
-  for(i in 1: length(AllClasses.v)) {
-    
-    
-    NewAnn <- ifelse(TrainPheno$Classes == AllClasses.v[[i]], "One","Others") 
-    Des <- model.matrix(~0 + NewAnn)
-    colnames(Des) <- levels(factor(NewAnn))
-    
-    LimmaFit <- lmFit(TrainData,Des)%>%
-      contrasts.fit(., makeContrasts(One-Others, levels = Des))%>%
-      eBayes(., trend = TRUE)%>%
-      topTable(., number = nrow(TrainData))
-    
-    LimmaFit <- LimmaFit%>%.[order(.$t),]
-    TotalRows <- nrow(LimmaFit) - 49
-    Features <- rbind(LimmaFit[1:50,] ,
-                      LimmaFit[TotalRows:nrow(LimmaFit),])
-    
-    Features <- rownames(Features)
-    message("DMR preselection complete")
-    #GLMnet training et cetera; inherits CV parameters from a Features.CVparam object in the script.
-    
-    Model <- train(x = t(TrainData[rownames(TrainData) %in% Features,]), y = factor(NewAnn), trControl = Features.CVparam, method = "glmnet" , tuneGrid = expand.grid(.alpha=c(0,0.2,0.5,0.8,1),.lambda = seq(0,0.05,by=0.01)))
-       message("Model Selection Complete")
-   Prediction.classProbs <- predict(Model, newdata = t(TestData), type = "prob")%>%
-     data.frame
-   
-   Prediction.classProbs$ActualClass <- TestPheno$Classes
-   Prediction.classProbs$PredictedClass <- predict(Model, newdata = t(TestData), type = "raw")
-   
-   
-   CombinedOutput <- list(Model = Model, TestPred = Prediction.classProbs)
-   ModList[[i]] <- CombinedOutput
-   
-  }
-    
-    
-    names(ModList) <- AllClasses.v 
+mMod=function(Mat,classes.df,Indices){
+    TrainData=Mat[,Indices]
+    TrainPheno=classes.df[Indices,]
+    TestData=Mat[,!colnames(Mat) %in% TrainPheno$ID]
+    TestPheno=classes.df%>%filter(!ID %in% TrainPheno$ID)
+    AllClasses.v=unique(classes.df$Classes)  
+    ModList=list()
+    for(i in 1: length(AllClasses.v)) {
+    NewAnn=ifelse(TrainPheno$Classes == AllClasses.v[[i]], "One","Others") 
+    Des=model.matrix(~0 + NewAnn)
+    colnames(Des)=levels(factor(NewAnn))
+    LimmaFit=lmFit(TrainData,Des)%>%
+      contrasts.fit(., makeContrasts(One-Others, levels=Des))%>%
+      eBayes(., trend=TRUE)%>%
+      topTable(., number=nrow(TrainData))
+    LimmaFit=LimmaFit%>%.[order(.$t),]
+    TotalRows=nrow(LimmaFit) - 49
+    Features=rbind(LimmaFit[1:50,] ,
+                      LimmaFit[TotalRows:nrow(LimmaFit),]
+    Features=rownames(Features)
+
+    Model=train(x=t(TrainData[rownames(TrainData) %in% Features,]), y=factor(NewAnn), trControl=Features.CVparam, method="glmnet" , tuneGrid=expand.grid(.alpha=c(0,0.2,0.5,0.8,1),.lambda=seq(0,0.05,by=0.01)))
+
+   Prediction.classProbs=predict(Model, newdata=t(TestData), type="prob") %>% data.frame
+   Prediction.classProbs$ActualClass=TestPheno$Classes
+   Prediction.classProbs$PredictedClass=predict(Model, newdata=t(TestData), type="raw")
+   CombinedOutput=list(Model=Model, TestPred=Prediction.classProbs)
+   ModList[[i]]=CombinedOutput
+ }
+    names(ModList)=AllClasses.v 
     return(ModList)
-    
-    
-  }
+}
 
       
   
-ModFunction.varyFeatureN <- function(Mat, classes.df, Indices, nDMR) {
-  
-  
-  #Then, we apply an iterative process of DMR selection and model training for each 
-  #training set for each one vs all comparison
-  
-  
-  
-  TrainData <- Mat[,Indices]
-  TrainPheno <- classes.df[Indices,]
-  
-  TestData <- Mat[,!colnames(Mat) %in% TrainPheno$ID]
-  TestPheno <- classes.df%>%filter(!ID %in% TrainPheno$ID)
-  
-  
-  AllClasses.v <- unique(classes.df$Classes)  
-  ModList <- list()
-  
-  #Limma-trend preselection on the training partition 
-  
+mMod.varyFeatureN=function(Mat, classes.df, Indices, nDE) {
+  TrainData=Mat[,Indices]
+  TrainPheno=classes.df[Indices,]
+  TestData=Mat[,!colnames(Mat) %in% TrainPheno$ID]
+  TestPheno=classes.df%>%filter(!ID %in% TrainPheno$ID)
+  AllClasses.v=unique(classes.df$Classes)  
+  ModList=list()
   for(i in 1: length(AllClasses.v)) {
-    
-    
-    NewAnn <- ifelse(TrainPheno$Classes == AllClasses.v[[i]], "One","Others") 
-    Des <- model.matrix(~0 + NewAnn)
-    colnames(Des) <- levels(factor(NewAnn))
-    
-    LimmaFit <- lmFit(TrainData,Des)%>%
-      contrasts.fit(., makeContrasts(One-Others, levels = Des))%>%
-      eBayes(., trend = TRUE)%>%
-      topTable(., number = nrow(TrainData))
-    
-    LimmaFit <- LimmaFit%>%.[order(.$t),]
-    
-    nDMR.b <- nDMR/2
-    
-    TotalRows <- nrow(LimmaFit) - (nDMR.b + 1)
-    Features <- rbind(LimmaFit[1:nDMR.b,] ,
+    NewAnn=ifelse(TrainPheno$Classes == AllClasses.v[[i]], "One","Others") 
+    Des=model.matrix(~0 + NewAnn)
+    colnames(Des)=levels(factor(NewAnn))
+    LimmaFit=lmFit(TrainData,Des)%>%
+      contrasts.fit(., makeContrasts(One-Others, levels=Des))%>%
+      eBayes(., trend=TRUE)%>%
+      topTable(., number=nrow(TrainData))
+    LimmaFit=LimmaFit%>%.[order(.$t),]
+    nDE.b=nDE/2
+    TotalRows=nrow(LimmaFit) - (nDE.b + 1)
+    Features=rbind(LimmaFit[1:nDE.b,] ,
                       LimmaFit[TotalRows:nrow(LimmaFit),])
-    
-    Features <- rownames(Features)
-    message(length(Features))
-    
-    message("DMR preselection complete")
-    #GLMnet training et cetera; inherits CV parameters from a Features.CVparam object in the script.
-    
-    Model <- train(x = t(TrainData[rownames(TrainData) %in% Features,]), y = factor(NewAnn), trControl = Features.CVparam, method = "glmnet" , tuneGrid = expand.grid(.alpha=c(0,0.2,0.5,0.8,1),.lambda = seq(0,0.05,by=0.01)))
+    Features=rownames(Features)
+    Model=train(x=t(TrainData[rownames(TrainData) %in% Features,]), y=factor(NewAnn), trControl=Features.CVparam, method="glmnet" , tuneGrid=expand.grid(.alpha=c(0,0.2,0.5,0.8,1),.lambda=seq(0,0.05,by=0.01)))
     message("Model Selection Complete")
-    Prediction.classProbs <- predict(Model, newdata = t(TestData), type = "prob")%>%
-      data.frame
-    
-    Prediction.classProbs$ActualClass <- TestPheno$Classes
-    Prediction.classProbs$PredictedClass <- predict(Model, newdata = t(TestData), type = "raw")
-    
-    
-    CombinedOutput <- list(Model = Model, TestPred = Prediction.classProbs)
-    ModList[[i]] <- CombinedOutput
-    
-  }
-  
-  
-  names(ModList) <- AllClasses.v 
-  return(ModList)
-  
-  
+    Prediction.classProbs=predict(Model, newdata=t(TestData), type="prob") %>% data.frame
+    Prediction.classProbs$ActualClass=TestPheno$Classes
+    Prediction.classProbs$PredictedClass=predict(Model, newdata=t(TestData), type="raw")
+    CombinedOutput=list(Model=Model, TestPred=Prediction.classProbs)
+    ModList[[i]]=CombinedOutput
+ }
+  names(ModList)=AllClasses.v 
+  return(ModList) 
 }
 
 
-GetAUC.ClassWise <- function(Runs) {
+GetAUC.ClassWise=function(Runs) {
+  NCs=lapply(Runs, function(x) x$NC)
+  NCs.predictions=lapply(NCs, function(x) x$TestPred%>%mutate(Class2=ifelse(ActualClass == "NC","One","Others")))
+  NCs.auc=lapply(NCs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
   
+  ESCAs=lapply(Runs, function(x) x$ESCA)
+  ESCAs.predictions=lapply(ESCAs, function(x) x$TestPred%>%mutate(Class2=ifelse(ActualClass == "ESCA","One","Others")))
+  ESCAs.auc=lapply(ESCAs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
   
-  Normals <- lapply(Runs, function(x) x$Normal)
-  Normals.predictions <- lapply(Normals, function(x) x$TestPred%>%mutate(Class2 = ifelse(ActualClass == "Normal","One","Others")))
-  Normals.auc <- lapply(Normals.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
+  HCCs=lapply(Runs, function(x) x$HCC)
+  HCCs.predictions=lapply(HCCs, function(x) x$TestPred%>%mutate(Class2=ifelse(ActualClass == "HCC","One","Others")))
+  HCCs.auc=lapply(HCCs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
   
-  PDACs <- lapply(Runs, function(x) x$PDAC)
-  PDACs.predictions <- lapply(PDACs, function(x) x$TestPred%>%mutate(Class2 = ifelse(ActualClass == "PDAC","One","Others")))
-  PDACs.auc <- lapply(PDACs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
+  LUADs=lapply(Runs, function(x) x$LUAD)
+  LUADs.predictions=lapply(LUADs, function(x) x$TestPred%>%mutate(Class2=ifelse(ActualClass == "LUAD","One","Others")))
+  LUADs.auc=lapply(LUADs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
   
-  BRCAs <- lapply(Runs, function(x) x$BRCA)
-  BRCAs.predictions <- lapply(BRCAs, function(x) x$TestPred%>%mutate(Class2 = ifelse(ActualClass == "BRCA","One","Others")))
-  BRCAs.auc <- lapply(BRCAs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
+  STADs=lapply(Runs, function(x) x$STAD)
+  STADs.predictions=lapply(STADs, function(x) x$TestPred%>%mutate(Class2=ifelse(ActualClass == "STAD","One","Others")))
+  STADs.auc=lapply(STADs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
   
-  BLCAs <- lapply(Runs, function(x) x$BLCA)
-  BLCAs.predictions <- lapply(BLCAs, function(x) x$TestPred%>%mutate(Class2 = ifelse(ActualClass == "BLCA","One","Others")))
-  BLCAs.auc <- lapply(BLCAs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
+  CRCs=lapply(Runs, function(x) x$CRC)
+  CRCs.predictions=lapply(CRCs, function(x) x$TestPred%>%mutate(Class2=ifelse(ActualClass == "CRC","One","Others")))
+  CRCs.auc=lapply(CRCs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
   
-  LUCs <- lapply(Runs, function(x) x$LUC)
-  LUCs.predictions <- lapply(LUCs, function(x) x$TestPred%>%mutate(Class2 = ifelse(ActualClass == "LUC","One","Others")))
-  LUCs.auc <- lapply(LUCs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
+  LUADs.auc=data.frame(AUC=unlist(LUADs.auc))%>%
+    mutate(ID="LUAD")
   
-  AMLs <- lapply(Runs, function(x) x$AML)
-  AMLs.predictions <- lapply(AMLs, function(x) x$TestPred%>%mutate(Class2 = ifelse(ActualClass == "AML","One","Others")))
-  AMLs.auc <- lapply(AMLs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
+  HCCs.auc=data.frame(AUC=unlist(HCCs.auc))%>%
+    mutate(ID="HCC")
   
-  CRCs <- lapply(Runs, function(x) x$CRC)
-  CRCs.predictions <- lapply(CRCs, function(x) x$TestPred%>%mutate(Class2 = ifelse(ActualClass == "CRC","One","Others")))
-  CRCs.auc <- lapply(CRCs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
+  CRCs.auc=data.frame(AUC=unlist(CRCs.auc))%>%
+    mutate(ID="CRC")
   
-  RCCs <- lapply(Runs, function(x) x$RCC)
-  RCCs.predictions <- lapply(RCCs, function(x) x$TestPred%>%mutate(Class2 = ifelse(ActualClass == "RCC","One","Others")))
-  RCCs.auc <- lapply(RCCs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
+  STADs.auc=data.frame(AUC=unlist(STADs.auc))%>%
+    mutate(ID="STAD")
   
-  #Aggregate into boxplots
+  NCs.auc=data.frame(AUC=unlist(NCs.auc))%>%
+    mutate(ID="NC")
   
-  AMLs.auc <- data.frame(AUC = unlist(AMLs.auc))%>%
-    mutate(ID = "AML")
-  
-  BLCAs.auc <- data.frame(AUC = unlist(BLCAs.auc))%>%
-    mutate(ID = "BLCA")
-  
-  BRCAs.auc <- data.frame(AUC = unlist(BRCAs.auc))%>%
-    mutate(ID = "BRCA")
-  
-  CRCs.auc <- data.frame(AUC = unlist(CRCs.auc))%>%
-    mutate(ID = "CRC")
-  
-  LUCs.auc <- data.frame(AUC = unlist(LUCs.auc))%>%
-    mutate(ID = "LUC")
-  
-  Normals.auc <- data.frame(AUC = unlist(Normals.auc))%>%
-    mutate(ID = "Normal")
-  
-  PDACs.auc <- data.frame(AUC = unlist(PDACs.auc))%>%
-    mutate(ID = "PDAC")
-  
-  RCCs.auc <- data.frame(AUC = unlist(RCCs.auc))%>%
-    mutate(ID = "RCC")
-  
-  Bound <- rbind(AMLs.auc,BLCAs.auc,BRCAs.auc,CRCs.auc,LUCs.auc,Normals.auc,PDACs.auc,RCCs.auc)
-  
-  
+  ESCAs.auc=data.frame(AUC=unlist(ESCAs.auc))%>%
+    mutate(ID="ESCA")
+                  
+  Bound=rbind(LUADs.auc,HCCs.auc,CRCs.auc,STADs.auc,NCs.auc,ESCAs.auc)
   return(Bound)
-  
-  
 }
 
-
-#Select DMRs in one vs each class procedure and fit a GLMnet 
-
-OnevsEach <- function(Mat, classes.df, Indices, nDMR) {
-  
-  
-  #Training/test-set split 
-  
-  TrainData <- Mat[,Indices]
-  TrainPheno <- classes.df[Indices,]
-  
-  TestData <- Mat[,!colnames(Mat) %in% TrainPheno$ID]
-  TestPheno <- classes.df%>%filter(!ID %in% TrainPheno$ID)
-  
-  #Set up models list
-  AllClasses.v <- unique(classes.df$Classes)  
-  ModList <- list()
-  
+OnevsEach=function(Mat, classes.df, Indices, nDE){
+  TrainData=Mat[,Indices]
+  TrainPheno=classes.df[Indices,]
+  TestData=Mat[,!colnames(Mat) %in% TrainPheno$ID]
+  TestPheno=classes.df%>%filter(!ID %in% TrainPheno$ID)
+  AllClasses.v=unique(classes.df$Classes)  
+  ModList=list()
   for(i in 1:length(AllClasses.v)) {
-    
-    FixedClass <- which(TrainPheno$Classes == AllClasses.v[[i]])
-    OtherClasses <- which(!TrainPheno$Classes == AllClasses.v[[i]])
-    
-    
-      DMRList <- list()
-      OtherClasses.vector <- unique(TrainPheno$Classes[OtherClasses])
+    FixedClass=which(TrainPheno$Classes == AllClasses.v[[i]])
+    OtherClasses=which(!TrainPheno$Classes == AllClasses.v[[i]])
+      DEList=list()
+      OtherClasses.vector=unique(TrainPheno$Classes[OtherClasses])
       print(OtherClasses.vector)
-    ##This loop does DMR preselection using a one vs each criterion
     for(j in 1:length(OtherClasses.vector)) {
-      
-      CurrentOtherClass <- which(TrainPheno$Classes == OtherClasses.vector[[j]] )
-      
-      FixedClass.matrix <- TrainData[,FixedClass]
-      OtherMatrix <- TrainData[,CurrentOtherClass]
-      DMR.classes <- c(rep("One",ncol(FixedClass.matrix)), rep("Others",ncol(OtherMatrix)))
-      
-      DMR.Data <- cbind(FixedClass.matrix, OtherMatrix)
-      Des <- model.matrix(~0 + DMR.classes)
-      colnames(Des) <- levels(factor(DMR.classes))
-      
-      LimmaFit <- lmFit(DMR.Data, Des)%>%
-        contrasts.fit(., makeContrasts(One-Others, levels = Des))%>%
-        eBayes(., trend = TRUE)%>%
-        topTable(., number = nrow(FixedClass.matrix))
-
-      LimmaFit <- LimmaFit%>%.[order(.$t),]
-      
-      nDMR.b <- nDMR/2
-      
-      TotalRows <- nrow(LimmaFit) - (nDMR.b + 1)
-      Features <- rbind(LimmaFit[1:nDMR.b,] ,
+      CurrentOtherClass=which(TrainPheno$Classes == OtherClasses.vector[[j]] )
+      FixedClass.matrix=TrainData[,FixedClass]
+      OtherMatrix=TrainData[,CurrentOtherClass]
+      DE.classes=c(rep("One",ncol(FixedClass.matrix)), rep("Others",ncol(OtherMatrix)))
+      DE.Data=cbind(FixedClass.matrix, OtherMatrix)
+      Des=model.matrix(~0 + DE.classes)
+      colnames(Des)=levels(factor(DE.classes))
+      LimmaFit=lmFit(DE.Data, Des)%>%
+        contrasts.fit(., makeContrasts(One-Others, levels=Des))%>%
+        eBayes(., trend=TRUE)%>%
+        topTable(., number=nrow(FixedClass.matrix))
+      LimmaFit=LimmaFit%>%.[order(.$t),]
+      nDE.b=nDE/2
+      TotalRows=nrow(LimmaFit) - (nDE.b + 1)
+      Features=rbind(LimmaFit[1:nDE.b,] ,
                         LimmaFit[TotalRows:nrow(LimmaFit),])
-      
-      Features <- rownames(Features)
-      DMRList[[j]] <- Features      
-      message(paste0(j,"of each vs other classes DMR selection done"))
+      Features=rownames(Features)
+      DEList[[j]]=Features      
+      message(paste0(j,"of each vs other classes DE selection done"))
     }
-    
-    #This creates feature set 
-    Features <- unlist(DMRList)
-    
-    #Here we fit the model and chuck it into the modlist 
-    
-    NewAnn <- ifelse(TrainPheno$Classes == AllClasses.v[[i]],"One","Others")
-    
-    Model <- train(x = t(TrainData[rownames(TrainData) %in% Features,]), y = factor(NewAnn), trControl = Features.CVparam, method = "glmnet" , tuneGrid = expand.grid(.alpha=c(0,0.2,0.5,0.8,1),.lambda = seq(0,0.05,by=0.01)), metric = "Kappa")
+    Features=unlist(DEList)
+    NewAnn=ifelse(TrainPheno$Classes == AllClasses.v[[i]],"One","Others")
+    Model=train(x=t(TrainData[rownames(TrainData) %in% Features,]), y=factor(NewAnn), trControl=Features.CVparam, method="glmnet" , tuneGrid=expand.grid(.alpha=c(0,0.2,0.5,0.8,1),.lambda=seq(0,0.05,by=0.01)), metric="Kappa")
     message("Model Selection Complete")
-    Prediction.classProbs <- predict(Model, newdata = t(TestData), type = "prob")%>%
-      data.frame
-    
-    Prediction.classProbs$ActualClass <- TestPheno$Classes
-    Prediction.classProbs$PredictedClass <- predict(Model, newdata = t(TestData), type = "raw")
+    Prediction.classProbs=predict(Model, newdata=t(TestData), type="prob") %>% data.frame
+    Prediction.classProbs$ActualClass=TestPheno$Classes
+    Prediction.classProbs$PredictedClass=predict(Model, newdata=t(TestData), type="raw")
     
     
-    CombinedOutput <- list(Model = Model, TestPred = Prediction.classProbs)
-    ModList[[i]] <- CombinedOutput
-    
+    CombinedOutput=list(Model=Model, TestPred=Prediction.classProbs)
+    ModList[[i]]=CombinedOutput
+  
   }
-  
-  names(ModList) <- AllClasses.v  
+  names(ModList)=AllClasses.v  
   return(ModList)  
-    
 }
   
-  
-#Get AUC.classwise2
 
-GetAUC.ClassWise2 <- function(Runs) {
+
+GetAUC.ClassWise2=function(Runs) {
   
+  NCs=lapply(Runs, function(x) x$NC)
+  NCs.predictions=lapply(NCs, function(x) x%>%mutate(Class2=ifelse(ActualClass == "NC","One","Others")))
+  NCs.auc=lapply(NCs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
   
-  Normals <- lapply(Runs, function(x) x$Normal)
-  Normals.predictions <- lapply(Normals, function(x) x%>%mutate(Class2 = ifelse(ActualClass == "Normal","One","Others")))
-  Normals.auc <- lapply(Normals.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
+  ESCAs=lapply(Runs, function(x) x$ESCA)
+  ESCAs.predictions=lapply(ESCAs, function(x) x%>%mutate(Class2=ifelse(ActualClass == "ESCA","One","Others")))
+  ESCAs.auc=lapply(ESCAs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
   
-  PDACs <- lapply(Runs, function(x) x$PDAC)
-  PDACs.predictions <- lapply(PDACs, function(x) x%>%mutate(Class2 = ifelse(ActualClass == "PDAC","One","Others")))
-  PDACs.auc <- lapply(PDACs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
+  HCCs=lapply(Runs, function(x) x$HCC)
+  HCCs.predictions=lapply(HCCs, function(x) x%>%mutate(Class2=ifelse(ActualClass == "HCC","One","Others")))
+  HCCs.auc=lapply(HCCs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
   
-  BRCAs <- lapply(Runs, function(x) x$BRCA)
-  BRCAs.predictions <- lapply(BRCAs, function(x) x%>%mutate(Class2 = ifelse(ActualClass == "BRCA","One","Others")))
-  BRCAs.auc <- lapply(BRCAs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
+  LUADs=lapply(Runs, function(x) x$LUAD)
+  LUADs.predictions=lapply(LUADs, function(x) x%>%mutate(Class2=ifelse(ActualClass == "LUAD","One","Others")))
+  LUADs.auc=lapply(LUADs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
   
-  BLCAs <- lapply(Runs, function(x) x$BLCA)
-  BLCAs.predictions <- lapply(BLCAs, function(x) x%>%mutate(Class2 = ifelse(ActualClass == "BLCA","One","Others")))
-  BLCAs.auc <- lapply(BLCAs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
+  STADs=lapply(Runs, function(x) x$STAD)
+  STADs.predictions=lapply(STADs, function(x) x%>%mutate(Class2=ifelse(ActualClass == "STAD","One","Others")))
+  STADs.auc=lapply(STADs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
   
-  LUCs <- lapply(Runs, function(x) x$LUC)
-  LUCs.predictions <- lapply(LUCs, function(x) x%>%mutate(Class2 = ifelse(ActualClass == "LUC","One","Others")))
-  LUCs.auc <- lapply(LUCs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
+  CRCs=lapply(Runs, function(x) x$CRC)
+  CRCs.predictions=lapply(CRCs, function(x) x%>%mutate(Class2=ifelse(ActualClass == "CRC","One","Others")))
+  CRCs.auc=lapply(CRCs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
   
-  AMLs <- lapply(Runs, function(x) x$AML)
-  AMLs.predictions <- lapply(AMLs, function(x) x%>%mutate(Class2 = ifelse(ActualClass == "AML","One","Others")))
-  AMLs.auc <- lapply(AMLs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
+  LUADs.auc=data.frame(AUC=unlist(LUADs.auc))%>%
+    mutate(ID="LUAD")
   
-  CRCs <- lapply(Runs, function(x) x$CRC)
-  CRCs.predictions <- lapply(CRCs, function(x) x%>%mutate(Class2 = ifelse(ActualClass == "CRC","One","Others")))
-  CRCs.auc <- lapply(CRCs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
+  HCCs.auc=data.frame(AUC=unlist(HCCs.auc))%>%
+    mutate(ID="HCC")
   
-  RCCs <- lapply(Runs, function(x) x$RCC)
-  RCCs.predictions <- lapply(RCCs, function(x) x%>%mutate(Class2 = ifelse(ActualClass == "RCC","One","Others")))
-  RCCs.auc <- lapply(RCCs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
+  CRCs.auc=data.frame(AUC=unlist(CRCs.auc))%>%
+    mutate(ID="CRC")
   
-  #Aggregate into boxplots
+  STADs.auc=data.frame(AUC=unlist(STADs.auc))%>%
+    mutate(ID="STAD")
   
-  AMLs.auc <- data.frame(AUC = unlist(AMLs.auc))%>%
-    mutate(ID = "AML")
+  NCs.auc=data.frame(AUC=unlist(NCs.auc))%>%
+    mutate(ID="NC")
   
-  BLCAs.auc <- data.frame(AUC = unlist(BLCAs.auc))%>%
-    mutate(ID = "BLCA")
+  ESCAs.auc=data.frame(AUC=unlist(ESCAs.auc))%>%
+    mutate(ID="ESCA")
   
-  BRCAs.auc <- data.frame(AUC = unlist(BRCAs.auc))%>%
-    mutate(ID = "BRCA")
-  
-  CRCs.auc <- data.frame(AUC = unlist(CRCs.auc))%>%
-    mutate(ID = "CRC")
-  
-  LUCs.auc <- data.frame(AUC = unlist(LUCs.auc))%>%
-    mutate(ID = "LUC")
-  
-  Normals.auc <- data.frame(AUC = unlist(Normals.auc))%>%
-    mutate(ID = "Normal")
-  
-  PDACs.auc <- data.frame(AUC = unlist(PDACs.auc))%>%
-    mutate(ID = "PDAC")
-  
-  RCCs.auc <- data.frame(AUC = unlist(RCCs.auc))%>%
-    mutate(ID = "RCC")
-  
-  Bound <- rbind(AMLs.auc,BLCAs.auc,BRCAs.auc,CRCs.auc,LUCs.auc,Normals.auc,PDACs.auc,RCCs.auc)
-  
-  
+  Bound=rbind(LUADs.auc,HCCs.auc,CRCs.auc,STADs.auc,NCs.auc,ESCAs.auc)
   return(Bound)
-  
-  
 }
 
 
-# Get AUPR classwise 
-
-
-GetAUPR.ClassWise <- function(Runs) {
-  
+GetAUPR.ClassWise=function(Runs) {
   require(PRROC)
+    
+  NCs=lapply(Runs, function(x) x$NC)
+  NCs.predictions <-lapply(NCs, function(x) x%>%mutate(Class2=ifelse(ActualClass == "NC",1,0))%>%mutate(Class2=as.numeric(Class2)))
+ NCs.auc=lapply(NCs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.integral)
   
-  Normals <- lapply(Runs, function(x) x$Normal)
-  Normals.predictions <-lapply(Normals, function(x) x%>%mutate(Class2 = ifelse(ActualClass == "Normal",1,0))%>%mutate(Class2 = as.numeric(Class2)))
- Normals.auc <- lapply(Normals.predictions, function(x) pr.curve(scores.class0 = x$One, weights.class0 = x$Class2)$auc.integral)
+  ESCAs=lapply(Runs, function(x) x$ESCA)
+  ESCAs.predictions=lapply(ESCAs, function(x) x%>%mutate(Class2=ifelse(ActualClass == "ESCA",1,0))%>%mutate(Class2=as.numeric(Class2)))
   
-  PDACs <- lapply(Runs, function(x) x$PDAC)
-  PDACs.predictions <- lapply(PDACs, function(x) x%>%mutate(Class2 = ifelse(ActualClass == "PDAC",1,0))%>%mutate(Class2 = as.numeric(Class2)))
-  
-  PDACs.auc <- lapply(PDACs.predictions, function(x) pr.curve(scores.class0 = x$One, weights.class0 = x$Class2)$auc.integral)
+  ESCAs.auc=lapply(ESCAs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.integral)
  
   
-   BRCAs <- lapply(Runs, function(x) x$BRCA)
-  BRCAs.predictions <-   lapply(BRCAs, function(x) x%>%mutate(Class2 = ifelse(ActualClass == "BRCA",1,0))%>%mutate(Class2 = as.numeric(Class2)))
-  BRCAs.auc <- lapply(BRCAs.predictions, function(x) pr.curve(scores.class0 = x$One, weights.class0 = x$Class2)$auc.integral)
+   HCCs=lapply(Runs, function(x) x$HCC)
+  HCCs.predictions=  lapply(HCCs, function(x) x%>%mutate(Class2=ifelse(ActualClass == "HCC",1,0))%>%mutate(Class2=as.numeric(Class2)))
+  HCCs.auc=lapply(HCCs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.integral)
   
    
-  BLCAs <- lapply(Runs, function(x) x$BLCA)
-  BLCAs.predictions <- lapply(BLCAs, function(x) x%>%mutate(Class2 = ifelse(ActualClass == "BLCA",1,0))%>%mutate(Class2 = as.numeric(Class2)))
-  BLCAs.auc <- lapply(BLCAs.predictions, function(x) pr.curve(scores.class0 = x$One, weights.class0 = x$Class2)$auc.integral)
+  LUADs=lapply(Runs, function(x) x$LUAD)
+  LUADs.predictions=lapply(LUADs, function(x) x%>%mutate(Class2=ifelse(ActualClass == "LUAD",1,0))%>%mutate(Class2=as.numeric(Class2)))
+  LUADs.auc=lapply(LUADs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.integral)
 
   
-    LUCs <- lapply(Runs, function(x) x$LUC)
-  LUCs.predictions <- lapply(LUCs, function(x) x%>%mutate(Class2 = ifelse(ActualClass == "LUC",1,0))%>%mutate(Class2 = as.numeric(Class2)))
-  LUCs.auc <- lapply(LUCs.predictions, function(x) pr.curve(scores.class0 = x$One, weights.class0 = x$Class2)$auc.integral) 
+    STADs=lapply(Runs, function(x) x$STAD)
+  STADs.predictions=lapply(STADs, function(x) x%>%mutate(Class2=ifelse(ActualClass == "STAD",1,0))%>%mutate(Class2=as.numeric(Class2)))
+  STADs.auc=lapply(STADs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.integral) 
 
+  CRCs=lapply(Runs, function(x) x$CRC)
+  CRCs.predictions=lapply(CRCs, function(x) x%>%mutate(Class2=ifelse(ActualClass == "CRC",1,0))%>%mutate(Class2=as.numeric(Class2)))
+  CRCs.auc=lapply(CRCs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.integral)
   
-  AMLs <- lapply(Runs, function(x) x$AML)
-  AMLs.predictions <- lapply(AMLs, function(x) x%>%mutate(Class2 = ifelse(ActualClass == "AML",1,0))%>%mutate(Class2 = as.numeric(Class2)))
-  AMLs.auc <- lapply(AMLs.predictions, function(x) pr.curve(scores.class0 = x$One, weights.class0 = x$Class2)$auc.integral)
+  LUADs.auc=data.frame(AUC=unlist(LUADs.auc)) %>% mutate(ID="LUAD")
   
-  CRCs <- lapply(Runs, function(x) x$CRC)
-  CRCs.predictions <- lapply(CRCs, function(x) x%>%mutate(Class2 = ifelse(ActualClass == "CRC",1,0))%>%mutate(Class2 = as.numeric(Class2)))
-  CRCs.auc <- lapply(CRCs.predictions, function(x) pr.curve(scores.class0 = x$One, weights.class0 = x$Class2)$auc.integral)
+  HCCs.auc=data.frame(AUC=unlist(HCCs.auc)) %>% mutate(ID="HCC")
   
-  RCCs <- lapply(Runs, function(x) x$RCC)
-  RCCs.predictions <- lapply(RCCs, function(x) x%>%mutate(Class2 = ifelse(ActualClass == "RCC",1,0))%>%mutate(Class2 = as.numeric(Class2)))
-  RCCs.auc <- lapply(RCCs.predictions, function(x) pr.curve(scores.class0 = x$One, weights.class0 = x$Class2)$auc.integral)
+  CRCs.auc=data.frame(AUC=unlist(CRCs.auc)) %>% mutate(ID="CRC")
   
+  STADs.auc=data.frame(AUC=unlist(STADs.auc)) %>% mutate(ID="STAD")
   
-#Compute AUCPR by integration here. 
+  NCs.auc=data.frame(AUC=unlist(NCs.auc)) %>% mutate(ID="NC")
   
-  AMLs.auc <- data.frame(AUC = unlist(AMLs.auc))%>%
-    mutate(ID = "AML")
+  ESCAs.auc=data.frame(AUC=unlist(ESCAs.auc)) %>% mutate(ID="ESCA")
   
-  BLCAs.auc <- data.frame(AUC = unlist(BLCAs.auc))%>%
-    mutate(ID = "BLCA")
-  
-  BRCAs.auc <- data.frame(AUC = unlist(BRCAs.auc))%>%
-    mutate(ID = "BRCA")
-  
-  CRCs.auc <- data.frame(AUC = unlist(CRCs.auc))%>%
-    mutate(ID = "CRC")
-  
-  LUCs.auc <- data.frame(AUC = unlist(LUCs.auc))%>%
-    mutate(ID = "LUC")
-  
-  Normals.auc <- data.frame(AUC = unlist(Normals.auc))%>%
-    mutate(ID = "Normal")
-  
-  PDACs.auc <- data.frame(AUC = unlist(PDACs.auc))%>%
-    mutate(ID = "PDAC")
-  
-  RCCs.auc <- data.frame(AUC = unlist(RCCs.auc))%>%
-    mutate(ID = "RCC")
+  Bound.integral=rbind(LUADs.auc,HCCs.auc,CRCs.auc,STADs.auc,NCs.auc,ESCAs.auc)
+  NCs.auc=lapply(NCs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.davis.goadrich)
+  ESCAs.auc=lapply(ESCAs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.davis.goadrich)
+  HCCs.auc=lapply(HCCs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.davis.goadrich)
+  LUADs.auc=lapply(LUADs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.davis.goadrich)
+  STADs.auc=lapply(STADs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.davis.goadrich) 
+  CRCs.auc=lapply(CRCs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.davis.goadrich)
+
+  Bound.davis.goadrich=rbind(LUADs.auc,HCCs.auc,CRCs.auc,STADs.auc,NCs.auc,ESCAs.auc)
   
   
-  Bound.integral <- rbind(AMLs.auc,BLCAs.auc,BRCAs.auc,CRCs.auc,LUCs.auc,Normals.auc,PDACs.auc,RCCs.auc)
-  
-  #Then calculate using the goadrich davis method 
-  
-  
-  Normals.auc <- lapply(Normals.predictions, function(x) pr.curve(scores.class0 = x$One, weights.class0 = x$Class2)$auc.davis.goadrich)
-  PDACs.auc <- lapply(PDACs.predictions, function(x) pr.curve(scores.class0 = x$One, weights.class0 = x$Class2)$auc.davis.goadrich)
-  BRCAs.auc <- lapply(BRCAs.predictions, function(x) pr.curve(scores.class0 = x$One, weights.class0 = x$Class2)$auc.davis.goadrich)
-  BLCAs.auc <- lapply(BLCAs.predictions, function(x) pr.curve(scores.class0 = x$One, weights.class0 = x$Class2)$auc.davis.goadrich)
-  LUCs.auc <- lapply(LUCs.predictions, function(x) pr.curve(scores.class0 = x$One, weights.class0 = x$Class2)$auc.davis.goadrich) 
-  AMLs.auc <- lapply(AMLs.predictions, function(x) pr.curve(scores.class0 = x$One, weights.class0 = x$Class2)$auc.davis.goadrich)
-  CRCs.auc <- lapply(CRCs.predictions, function(x) pr.curve(scores.class0 = x$One, weights.class0 = x$Class2)$auc.davis.goadrich)
-  RCCs.auc <- lapply(RCCs.predictions, function(x) pr.curve(scores.class0 = x$One, weights.class0 = x$Class2)$auc.davis.goadrich)
-  
-  Bound.davis.goadrich <- rbind(AMLs.auc,BLCAs.auc,BRCAs.auc,CRCs.auc,LUCs.auc,Normals.auc,PDACs.auc,RCCs.auc)
-  
-  
-  return(list(Integral = Bound.integral, DavisGoadrich = Bound.davis.goadrich))
+  return(list(Integral=Bound.integral, DavisGoadrich=Bound.davis.goadrich))
   
 }
