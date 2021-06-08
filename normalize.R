@@ -29,18 +29,17 @@ count_matrix=count_matrix[,sampleIDs]
 ################################################
 ####     Step_3: Cross check gene names     ####
 ################################################
-fea_vec=c()
-for (fea in featureIDs){
-  if (TRUE %in% str_detect(fea, ref$`Gene stable ID`)){ fea_vec=append(fea_vec,fea) }}
-
-count_matrix=subset(count_matrix, rownames(count_matrix) %in% fea_vec)
+#fea_vec=c()
+#for (fea in featureIDs){
+#  if (TRUE %in% str_detect(fea, ref$`Gene stable ID`)){ fea_vec=append(fea_vec,fea) }}
+#count_matrix=subset(count_matrix, rownames(count_matrix) %in% fea_vec)
 
 ################################################
 ####         Step_4: Filter sparsity        ####
 ################################################
-#for (i in 1: length(uni_label)){
-#  filter <- apply(count_matrix[,grep(uni_label[i], colnames(count_matrix))], 1, function(x) length(x[x>0])/length(x)>=0.2)
-#  count_matrix <- count_matrix[filter,]}
+for (i in 1: length(uni_label)){
+ filter <- apply(count_matrix[,grep(uni_label[i], colnames(count_matrix))], 1, function(x) length(x[x>0])/length(x)>=0.2)
+ count_matrix <- count_matrix[filter,]}
 
 ################################################
 ####     Step_5: Differential Analysis      ####
