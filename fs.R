@@ -23,7 +23,7 @@ for(i in 1:100) {
   AllIterations.onevEach[[i]] <- OnevsEach(Combined, classes.df = Splits$df, Indices = Splits$samples[[i]], nDMR = 300) 
   message(i)
 }
-
+save(AllIterations.onevEach, file = "AllIterations_300Features_OnevEach.RData")
 PredFunction <- function(ModelList, TestData, Indices, classes.df) { 
   TrainPheno <- classes.df[Indices,]
   TestData <- TestData[,!colnames(TestData) %in% TrainPheno$ID]
