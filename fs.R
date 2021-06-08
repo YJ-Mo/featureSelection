@@ -10,9 +10,9 @@ library(NMF)
 library(doParallel)
 library(pROC)
 
-source("~/Desktop/LuLab/cancer/MLFinal/OnevAllClassifiers.R")
-Combined=read.table("~/Desktop/LuLab/cancer/rawData/pico.txt",sep='\t',header=TRUE,row.names=1)
-Input=read.table("~/Desktop/LuLab/cancer/rawData/pico_label.txt",sep='\t',header=TRUE)
+source("your_dir/Classifiers.R")
+Combined=read.table("your_dir/pico.txt",sep='\t',header=TRUE,row.names=1)
+Input=read.table("your_dir//pico_label.txt",sep='\t',header=TRUE)
 Features.CVparam<- trainControl(method = "repeatedcv",number = 8, repeats =2,verboseIter=TRUE,returnData=FALSE,classProbs = TRUE,savePredictions=FALSE)
 
 Cluster <-makeCluster(5)
