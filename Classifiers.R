@@ -17,6 +17,22 @@ mPredict=function(ModelList,TestData,Indices,classes.df) {
   return(Predictions.list)
 } 
 
+mValidate=function(type) {
+Type=c(lapply(AllIterations.onevEach, function(x) x$type))
+Type=lapply(Type, function(x) x$Model)
+Models.Validation=list() 
+for(i in 1:length(Type)) {
+  Features <- Type[[i]]$finalModel$xNames
+  ValData <- Validation.mat[match(Features, rownames(Validation.mat)),]
+  Predictions <- predict(Type[[i]], newdata = t(ValData), type ="prob")
+  Models.Validation[[i]] <- Predictions
+  message(i)
+}
+Models.Validation <- lapply(Models.Validation, function(x) x%>%as.data.frame%>%mutate(Class = ifelse(Validation.Pheno$Group == type,1,0)))
+Type.AUCs <- lapply(Models.Validation, function(x) with(x,auc(Class ~ One)))
+rm(Type)
+}
+
 mSplit=function(Count,Label,Num){
   require(dplyr)
   require(caret)
