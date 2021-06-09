@@ -55,3 +55,40 @@ Plot_innerAUC=qplot(data=AUCs.DiscoveryCohort,y=AUC,x=ID,geom="jitter",size=I(2)
   xlab("Cancer types")
 Plot_innerAUC
 dev.off
+
+##################
+NC_AUCs=mValidate("NC")
+NC_AUCs=data.frame(AUC=unlist(NC_AUCs), stringsAsFactors=False) %>% mutate(Class="NC")
+HCC_AUCs=mValidate("HCC")
+HCC_AUCs=data.frame(AUC=unlist(HCC_AUCs), stringsAsFactors=False) %>% mutate(Class="HCC")
+CRC_AUCs=mValidate("CRC")
+CRC_AUCs=data.frame(AUC=unlist(CRC_AUCs), stringsAsFactors=False) %>% mutate(Class="CRC")
+STAD_AUCs=mValidate("STAD")
+STAD_AUCs=data.frame(AUC=unlist(STAD_AUCs), stringsAsFactors=False) %>% mutate(Class="STAD")
+ESCA_AUCs=mValidate("ESCA")
+ESCA_AUCs=data.frame(AUC=unlist(ESCA_AUCs), stringsAsFactors=False) %>% mutate(Class="ESCA")
+LUAD_AUCs=mValidate("LUAD")
+LUAD_AUCs=data.frame(AUC=unlist(LUAD_AUCs), stringsAsFactors=False) %>% mutate(Class="LUAD")
+
+
+
+PDACs.AUCs <- data.frame(AUC = unlist(PDACs.AUCs), stringsAsFactors = F)%>%
+  mutate(Class = "PDAC")
+
+Normals.AUCs <- data.frame(AUC = unlist(Normals.AUCs), stringsAsFactors = F)%>%
+  mutate(Class = "Normal")
+
+LUCs.AUCs <- data.frame(AUC = unlist(LUCs.AUCs), stringsAsFactors = F)%>%
+  mutate(Class = "LUC")
+
+AUCTab <- rbind(AMLs.AUCs, PDACs.AUCs, Normals.AUCs, LUCs.AUCs)
+Plot2 <- qplot(data = AUCTab, y = AUC, x = Class, geom = "jitter", size = I(2), colour = I("orange"))+
+  geom_boxplot(colour = I("black"), alpha = I(0))+
+  theme_bw()+
+  ylab("Validation Cohort AUCs")+
+  ylim(c(0.4,1.0))
+
+library(gridExtra)
+
+#pdf(width = 10, height = 5, file = "OnevsEachFeatures.pdf")
+grid.arrange(Plot1, Plot2, nrow = 1, widths = c(6,3))
