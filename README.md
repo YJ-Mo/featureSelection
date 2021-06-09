@@ -14,4 +14,4 @@
 
 1. Thanks to my lab fellow @uaauaguga for normalization and LR ideas.
 
-2. Thanks to my lab fellow @ for discussion.
+2. Thanks to my lab fellow @QingZhan98 for discussion.
