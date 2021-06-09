@@ -31,6 +31,7 @@ for(i in 1:length(Type)) {
 Models.Validation <- lapply(Models.Validation, function(x) x%>%as.data.frame%>%mutate(Class = ifelse(Validation.Pheno$Group == type,1,0)))
 Type.AUCs <- lapply(Models.Validation, function(x) with(x,auc(Class ~ One)))
 rm(Type)
+return(Type.AUCs)
 }
 
 mSplit=function(Count,Label,Num){
