@@ -10,7 +10,6 @@ library("optparse")
 library("pROC")
 library("reshape2")
 library("tidyr")
-library("optparse")
 option_list <- list( 
     make_option(c("-c","--count"), help="path of raw count matrix"),
     make_option(c("-l","--label"), help="path of label file"),
