@@ -4,7 +4,7 @@ library("optparse")
 option_list <- list( 
 		    make_option("--count", help="path of raw count matrix"),
 		    make_option("--label", help = "path of label file"),
-        make_option("--ref", help = "path of ensembl references file"),
+                    make_option("--ref", help = "path of ensembl references file"),
 		    make_option("--tmm", help="ouput file of TMM_normalized matrix"),
 		    make_option("--ruv",help="ouput file of TMM + RUVg_normalized matrix"),
 		    make_option("--anova",help="output of anova table")
