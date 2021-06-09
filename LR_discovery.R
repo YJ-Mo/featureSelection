@@ -70,19 +70,9 @@ ESCA_AUCs=data.frame(AUC=unlist(ESCA_AUCs), stringsAsFactors=False) %>% mutate(C
 LUAD_AUCs=mValidate("LUAD")
 LUAD_AUCs=data.frame(AUC=unlist(LUAD_AUCs), stringsAsFactors=False) %>% mutate(Class="LUAD")
 
-
-
-PDACs.AUCs <- data.frame(AUC = unlist(PDACs.AUCs), stringsAsFactors = F)%>%
-  mutate(Class = "PDAC")
-
-Normals.AUCs <- data.frame(AUC = unlist(Normals.AUCs), stringsAsFactors = F)%>%
-  mutate(Class = "Normal")
-
-LUCs.AUCs <- data.frame(AUC = unlist(LUCs.AUCs), stringsAsFactors = F)%>%
-  mutate(Class = "LUC")
-
-AUCTab <- rbind(AMLs.AUCs, PDACs.AUCs, Normals.AUCs, LUCs.AUCs)
-Plot2 <- qplot(data = AUCTab, y = AUC, x = Class, geom = "jitter", size = I(2), colour = I("orange"))+
+All_AUCs <- rbind(NC_AUCs, HCC_AUCs, CRC_AUCs, STAD_AUCs, ESCA_AUCs, LUAD_AUCs)
+png(file=opt$plot_externalAUC)
+Plot2 <- qplot(data = All_AUCs, y = AUC, x = Class, geom = "jitter", size = I(2), colour = I("orange"))+
   geom_boxplot(colour = I("black"), alpha = I(0))+
   theme_bw()+
   ylab("Validation Cohort AUCs")+
