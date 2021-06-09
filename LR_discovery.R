@@ -15,6 +15,7 @@ option_list <- list(
     make_option(c("-c","--count"), help="path of raw count matrix"),
     make_option(c("-l","--label"), help="path of label file"),
     make_option(c("-cl","--classifier"), help="path of classifier file"),
+    make_option(c("-v","--validation"), help="path of validation matrix"),
     make_option(c("-f","--fold"), help="number of cross validation fold",type="numeric",default="10"),
     make_option(c("-i","--iteration"), help="number of iterations",type="numeric",default="3"),
     make_option(c("-p","--partition"), help="number of partition times of discovery count matrix",type="numeric",default="100"),
@@ -27,6 +28,7 @@ source(opt$classifier)
 ### Step1: Input discovery count matrix file and label file
 DiscoveryCount=read.table(opt$count,sep='\t',header=TRUE,row.names=1)
 Labels=read.table(opt$label,sep='\t',header=TRUE)
+ValidationCount=read.table(opt$validation,sep='\t',header=TRUE,row.names=1)
 
 ### Step2: Split discovery count matrix
 Features.CVparam=trainControl(method="repeatedcv",number=opt$fold, repeats=opt$iteration,verboseIter=TRUE,returnData=FALSE,classProbs=TRUE,savePredictions=FALSE)
