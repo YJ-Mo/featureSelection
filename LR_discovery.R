@@ -59,7 +59,7 @@ Plot_innerAUC=qplot(data=AUCs.DiscoveryCohort,y=AUC,x=ID,geom="jitter",size=I(2)
 Plot_innerAUC
 dev.off
 
-##################
+### Step5: Predict on validation matrix
 NC_AUCs=mValidate("NC")
 NC_AUCs=data.frame(AUC=unlist(NC_AUCs), stringsAsFactors=False) %>% mutate(Class="NC")
 HCC_AUCs=mValidate("HCC")
@@ -73,15 +73,13 @@ ESCA_AUCs=data.frame(AUC=unlist(ESCA_AUCs), stringsAsFactors=False) %>% mutate(C
 LUAD_AUCs=mValidate("LUAD")
 LUAD_AUCs=data.frame(AUC=unlist(LUAD_AUCs), stringsAsFactors=False) %>% mutate(Class="LUAD")
 
-All_AUCs <- rbind(NC_AUCs, HCC_AUCs, CRC_AUCs, STAD_AUCs, ESCA_AUCs, LUAD_AUCs)
+### Step6: Plotting external AUC
+All_AUCs=rbind(NC_AUCs, HCC_AUCs, CRC_AUCs, STAD_AUCs, ESCA_AUCs, LUAD_AUCs)
 png(file=opt$plot_externalAUC)
-Plot2 <- qplot(data = All_AUCs, y = AUC, x = Class, geom = "jitter", size = I(2), colour = I("orange"))+
+Plot_externalAUC=qplot(data = All_AUCs, y = AUC, x = Class, geom = "jitter", size = I(2), colour = I("#46AFFF"))+
   geom_boxplot(colour = I("black"), alpha = I(0))+
   theme_bw()+
-  ylab("Validation Cohort AUCs")+
+  ylab("AUCs within Validation")+
   ylim(c(0.4,1.0))
-
-library(gridExtra)
-
-#pdf(width = 10, height = 5, file = "OnevsEachFeatures.pdf")
-grid.arrange(Plot1, Plot2, nrow = 1, widths = c(6,3))
+Plot_externalAUC
+dev.off
