@@ -12,13 +12,14 @@ library("reshape2")
 library("tidyr")
 library("optparse")
 option_list <- list( 
-    make_option("--count", help="path of raw count matrix"),
-    make_option("--label", help = "path of label file"),
-    make_option("--classifier", help = "path of classifier file"),
-    make_option("--fold", help = "number of cross validation fold"),
-    make_option("--iteration", help = "number of iterations"),
-    make_option("--partition", help = "number of partition times of discovery count matrix"),
-    make_option("--plot_innerAUC", help = "path of saved AUC plot of inner CV")
+    make_option(c("-c","--count"), help="path of raw count matrix"),
+    make_option(c("-l","--label"), help="path of label file"),
+    make_option(c("-cl","--classifier"), help="path of classifier file"),
+    make_option(c("-f","--fold"), help="number of cross validation fold",type="numeric",default="10"),
+    make_option(c("-i","--iteration"), help="number of iterations",type="numeric",default="3"),
+    make_option(c("-p","--partition"), help="number of partition times of discovery count matrix",type="numeric",default="100"),
+    make_option(c("-p1","--plot_innerAUC"), help="path of saved AUC plot of inner CV",type="character",default="./innerAUC.png"),
+    make_option(c("-p2","--plot_externalAUC"), help="path of saved AUC plot of external CV",type="character",default="./externalAUC.png")
 )
 opt <- parse_args(OptionParser(option_list=option_list))
 source(opt$classifier)
