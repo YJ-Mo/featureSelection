@@ -18,7 +18,7 @@ mPredict=function(ModelList,TestData,Indices,classes.df) {
 } 
 
 mValidate=function(type) {
-Type=c(lapply(DiscoveryIteration, function(x) x$[[type]]))
+Type=c(lapply(DiscoveryIteration, function(x) x[[type]]))
 Type=lapply(Type, function(x) x$Model)
 Models.Validation=list() 
 for(i in 1:length(Type)) {
@@ -28,7 +28,7 @@ for(i in 1:length(Type)) {
   Models.Validation[[i]] <- Predictions
   message(i)
 }
-Models.Validation <- lapply(Models.Validation, function(x) x%>%as.data.frame%>%mutate(Class = ifelse(Validation.Pheno$Group == type,1,0)))
+Models.Validation <- lapply(Models.Validation, function(x) x%>%as.data.frame%>%mutate(Class = ifelse(ValidationLabel$label == [[type]],1,0)))
 Type.AUCs <- lapply(Models.Validation, function(x) with(x,auc(Class ~ One)))
 rm(Type)
 return(Type.AUCs)
@@ -80,9 +80,7 @@ mMod=function(Mat,classes.df,Indices){
     Features=rbind(LimmaFit[1:50,] ,
                       LimmaFit[TotalRows:nrow(LimmaFit),])
     Features=rownames(Features)
-
     Model=train(x=t(TrainData[rownames(TrainData) %in% Features,]), y=factor(NewAnn), trControl=Features.CVparam, method="glmnet" , tuneGrid=expand.grid(.alpha=c(0,0.2,0.5,0.8,1),.lambda=seq(0,0.05,by=0.01)))
-
    Prediction.classProbs=predict(Model, newdata=t(TestData), type="prob") %>% data.frame
    Prediction.classProbs$ActualClass=TestPheno$Classes
    Prediction.classProbs$PredictedClass=predict(Model, newdata=t(TestData), type="raw")
@@ -93,8 +91,6 @@ mMod=function(Mat,classes.df,Indices){
     return(ModList)
 }
 
-      
-  
 mMod.varyFeatureN=function(Mat, classes.df, Indices, nDE) {
   TrainData=Mat[,Indices]
   TrainPheno=classes.df[Indices,]
@@ -127,7 +123,6 @@ mMod.varyFeatureN=function(Mat, classes.df, Indices, nDE) {
   names(ModList)=AllClasses.v 
   return(ModList) 
 }
-
 
 GetAUC.ClassWise=function(Runs) {
   NCs=lapply(Runs, function(x) x$NC)
@@ -255,53 +250,42 @@ GetAUC.ClassWise2=function(Runs) {
   CRCs.predictions=lapply(CRCs, function(x) x%>%mutate(Class2=ifelse(ActualClass == "CRC","One","Others")))
   CRCs.auc=lapply(CRCs.predictions, function(x) with(x,roc(Class2 ~ One)$auc))
   
-  LUADs.auc=data.frame(AUC=unlist(LUADs.auc))%>%
-    mutate(ID="LUAD")
+  LUADs.auc=data.frame(AUC=unlist(LUADs.auc))%>% mutate(ID="LUAD")
   
-  HCCs.auc=data.frame(AUC=unlist(HCCs.auc))%>%
-    mutate(ID="HCC")
+  HCCs.auc=data.frame(AUC=unlist(HCCs.auc))%>% mutate(ID="HCC")
   
-  CRCs.auc=data.frame(AUC=unlist(CRCs.auc))%>%
-    mutate(ID="CRC")
+  CRCs.auc=data.frame(AUC=unlist(CRCs.auc)) %>% mutate(ID="CRC")
   
-  STADs.auc=data.frame(AUC=unlist(STADs.auc))%>%
-    mutate(ID="STAD")
+  STADs.auc=data.frame(AUC=unlist(STADs.auc)) %>% mutate(ID="STAD")
   
-  NCs.auc=data.frame(AUC=unlist(NCs.auc))%>%
-    mutate(ID="NC")
+  NCs.auc=data.frame(AUC=unlist(NCs.auc)) %>% mutate(ID="NC")
   
-  ESCAs.auc=data.frame(AUC=unlist(ESCAs.auc))%>%
-    mutate(ID="ESCA")
+  ESCAs.auc=data.frame(AUC=unlist(ESCAs.auc)) %>% mutate(ID="ESCA")
   
   Bound=rbind(LUADs.auc,HCCs.auc,CRCs.auc,STADs.auc,NCs.auc,ESCAs.auc)
   return(Bound)
 }
-
 
 GetAUPR.ClassWise=function(Runs) {
   require(PRROC)
     
   NCs=lapply(Runs, function(x) x$NC)
   NCs.predictions <-lapply(NCs, function(x) x%>%mutate(Class2=ifelse(ActualClass == "NC",1,0))%>%mutate(Class2=as.numeric(Class2)))
- NCs.auc=lapply(NCs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.integral)
+  NCs.auc=lapply(NCs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.integral)
   
   ESCAs=lapply(Runs, function(x) x$ESCA)
   ESCAs.predictions=lapply(ESCAs, function(x) x%>%mutate(Class2=ifelse(ActualClass == "ESCA",1,0))%>%mutate(Class2=as.numeric(Class2)))
-  
   ESCAs.auc=lapply(ESCAs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.integral)
  
-  
-   HCCs=lapply(Runs, function(x) x$HCC)
+  HCCs=lapply(Runs, function(x) x$HCC)
   HCCs.predictions=  lapply(HCCs, function(x) x%>%mutate(Class2=ifelse(ActualClass == "HCC",1,0))%>%mutate(Class2=as.numeric(Class2)))
   HCCs.auc=lapply(HCCs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.integral)
-  
    
   LUADs=lapply(Runs, function(x) x$LUAD)
   LUADs.predictions=lapply(LUADs, function(x) x%>%mutate(Class2=ifelse(ActualClass == "LUAD",1,0))%>%mutate(Class2=as.numeric(Class2)))
   LUADs.auc=lapply(LUADs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.integral)
-
   
-    STADs=lapply(Runs, function(x) x$STAD)
+  STADs=lapply(Runs, function(x) x$STAD)
   STADs.predictions=lapply(STADs, function(x) x%>%mutate(Class2=ifelse(ActualClass == "STAD",1,0))%>%mutate(Class2=as.numeric(Class2)))
   STADs.auc=lapply(STADs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.integral) 
 
@@ -310,15 +294,10 @@ GetAUPR.ClassWise=function(Runs) {
   CRCs.auc=lapply(CRCs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.integral)
   
   LUADs.auc=data.frame(AUC=unlist(LUADs.auc)) %>% mutate(ID="LUAD")
-  
   HCCs.auc=data.frame(AUC=unlist(HCCs.auc)) %>% mutate(ID="HCC")
-  
   CRCs.auc=data.frame(AUC=unlist(CRCs.auc)) %>% mutate(ID="CRC")
-  
   STADs.auc=data.frame(AUC=unlist(STADs.auc)) %>% mutate(ID="STAD")
-  
   NCs.auc=data.frame(AUC=unlist(NCs.auc)) %>% mutate(ID="NC")
-  
   ESCAs.auc=data.frame(AUC=unlist(ESCAs.auc)) %>% mutate(ID="ESCA")
   
   Bound.integral=rbind(LUADs.auc,HCCs.auc,CRCs.auc,STADs.auc,NCs.auc,ESCAs.auc)
@@ -330,8 +309,5 @@ GetAUPR.ClassWise=function(Runs) {
   CRCs.auc=lapply(CRCs.predictions, function(x) pr.curve(scores.class0=x$One, weights.class0=x$Class2)$auc.davis.goadrich)
 
   Bound.davis.goadrich=rbind(LUADs.auc,HCCs.auc,CRCs.auc,STADs.auc,NCs.auc,ESCAs.auc)
-  
-  
   return(list(Integral=Bound.integral, DavisGoadrich=Bound.davis.goadrich))
-  
 }
