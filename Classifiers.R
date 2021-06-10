@@ -23,8 +23,8 @@ Type=lapply(Type, function(x) x$Model)
 Models.Validation=list() 
 for(i in 1:length(Type)) {
   Features <- Type[[i]]$finalModel$xNames
-  ValData <- ValidationCount[,match(Features, colnames(ValidationCount))]
-  Predictions <- predict(Type[[i]], newdata = ValData, type ="prob")
+  ValData <- ValidationCount[match(Features, rownames(ValidationCount)),]
+  Predictions <- predict(Type[[i]], newdata = t(ValData), type ="prob")
   Models.Validation[[i]] <- Predictions
   message(i)
 }
