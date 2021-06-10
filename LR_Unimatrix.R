@@ -56,7 +56,7 @@ TestPerformance.list <- list()
 for(i in 1:100) {
     TestPerformance.list[[i]]=mPredict(ModelList=DiscoveryIteration[[i]],TestData=DiscoveryCount,Indices=Splits$samples[[i]], classes.df = Classes.df)}
 AUCs.Discovery <- GetAUC.ClassWise2(TestPerformance.list)
-write.table(AUCs.Disvovery,paste(opt$output,"/AUC_Discovery.txt"),sep="\t",quote=False)
+write.table(AUCs.Disvovery,paste(opt$output,"AUC_Discovery.txt"),sep="\t",quote=False)
 Counts.Samples <- count(Labels,label) %>% mutate(Frac = n/373)
 
 ### Step4: Ploting inner AUC
@@ -85,7 +85,7 @@ LUAD_AUCs=data.frame(AUC=unlist(LUAD_AUCs), stringsAsFactors=False) %>% mutate(C
 
 ### Step6: Plotting external AUC
 All_AUCs=rbind(NC_AUCs, HCC_AUCs, CRC_AUCs, STAD_AUCs, ESCA_AUCs, LUAD_AUCs)
-write.table(All_AUCs,paste(opt$output,"/AUC_Validation.txt"),sep="\t",quote=False)
+write.table(All_AUCs,paste(opt$output,"AUC_Validation.txt"),sep="\t",quote=False)
 png(file=opt$plot_externalAUC)
 #Plot_externalAUC=mPlot(All_AUCs)
 Plot_externalAUC=qplot(data = All_AUCs, y = AUC, x = Class, geom = "jitter", size = I(2), colour = I("#46AFFF"))
