@@ -2,7 +2,11 @@ library("broom")
 library("caret")
 library("doParallel")
 library("dplyr")
+library("edgR")
+library("extrafont")
 library("ggplot2")
+library("ggpubr")
+library("ggsci")
 library("glmnet")
 library("limma")
 library("NMF")
@@ -14,7 +18,6 @@ option_list <- list(
     make_option(c("-c","--count"), help="path of raw count matrix"),
     make_option(c("-l","--label"), help="path of label file"),
     make_option(c("-cl","--classifier"), help="path of classifier file"),
-    #make_option(c("-v","--validation"), help="path of validation matrix"),
     make_option(c("-f","--fold"), help="number of cross validation fold",type="numeric",default="10"),
     make_option(c("-i","--iteration"), help="number of iterations",type="numeric",default="3"),
     make_option(c("-p","--partition"), help="number of partition times of discovery count matrix",type="numeric",default="100"),
@@ -27,8 +30,8 @@ source(opt$classifier)
 ### Step1: Input discovery count matrix file and label file
 AllCount=read.table(opt$count,sep='\t',header=TRUE,row.names=1)
 AllLabels=read.table(opt$label,sep='\t',header=TRUE)
-DVSplit=mSplit(AllCount,AllLabels$label,1
-              )
+
+DVSplit=mSplit(AllCount,AllLabels$label,1)
 DiscoveryCount=AllCount[,DVSplit$samples$Resample]
 Labels=AllLabels[DVSplit$samples$Resample,]
 ValidationCount=AllCount[,-DVSplit$samples$Resample]
@@ -42,7 +45,7 @@ Cluster=registerDoParallel(Cluster)
 DiscoveryIteration=list()
 Splits=mSplit(DiscoveryCount,Labels$label,opt$partition)
 for(i in 1:opt$partition) {
-  DiscoveryIteration[[i]]=OnevsEach(DiscoveryCount,nDE=200,classes.df=Splits$df,Indices=Splits$samples[[i]]) 
+  DiscoveryIteration[[i]]=OnevsEach(DiscoveryCount,nDE=100,classes.df=Splits$df,Indices=Splits$samples[[i]]) 
   cat("Finish",i,"at",date())
 }
 
@@ -62,7 +65,7 @@ Plot_innerAUC=qplot(data=AUCs.DiscoveryCohort,y=AUC,x=ID,geom="jitter",size=I(2)
   ylab("AUCs within Discovery")+
   xlab("Cancer types")
 Plot_innerAUC
-dev.off
+while (!is.null(dev.list()))  dev.off()
 
 ### Step5: Predict on validation matrix
 NC_AUCs=mValidate("NC")
