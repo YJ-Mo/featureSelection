@@ -21,6 +21,7 @@ option_list <- list(
     make_option(c("-f","--fold"), help="number of cross validation fold",type="numeric",default="10"),
     make_option(c("-i","--iteration"), help="number of iterations",type="numeric",default="3"),
     make_option(c("-p","--partition"), help="number of partition times of discovery count matrix",type="numeric",default="100"),
+    make_option(c("-o","--output"), help="path to output AUC plots and data frames"),
     make_option(c("-p1","--plot_innerAUC"), help="path of saved AUC plot of inner CV",type="character",default="./innerAUC.png"),
     make_option(c("-p2","--plot_externalAUC"), help="path of saved AUC plot of external CV",type="character",default="./externalAUC.png")
 )
@@ -54,12 +55,13 @@ Classes.df <- Splits$df
 TestPerformance.list <- list()
 for(i in 1:100) {
     TestPerformance.list[[i]]=mPredict(ModelList=DiscoveryIteration[[i]],TestData=DiscoveryCount,Indices=Splits$samples[[i]], classes.df = Classes.df)}
-AUCs.DiscoveryCohort <- GetAUC.ClassWise2(TestPerformance.list)
+AUCs.Discovery <- GetAUC.ClassWise2(TestPerformance.list)
+write.table(AUCs.Disvovery,paste(opt$output,"/AUC_Discovery.txt"),sep="\t",quote=False)
 Counts.Samples <- count(Labels,label) %>% mutate(Frac = n/373)
 
 ### Step4: Ploting inner AUC
 png(file=opt$plot_innerAUC)
-Plot_innerAUC=qplot(data=AUCs.DiscoveryCohort,y=AUC,x=ID,geom="jitter",size=I(2), colour=I("#FF6666"))+
+Plot_innerAUC=qplot(data=AUCs.Discovery,y=AUC,x=ID,geom="jitter",size=I(2), colour=I("#FF6666"))+
   geom_boxplot(colour=I("black"), alpha=I(0))+
   theme_bw()+
   ylab("AUCs within Discovery")+
@@ -83,6 +85,7 @@ LUAD_AUCs=data.frame(AUC=unlist(LUAD_AUCs), stringsAsFactors=False) %>% mutate(C
 
 ### Step6: Plotting external AUC
 All_AUCs=rbind(NC_AUCs, HCC_AUCs, CRC_AUCs, STAD_AUCs, ESCA_AUCs, LUAD_AUCs)
+write.table(All_AUCs,paste(opt$output,"/AUC_Validation.txt"),sep="\t",quote=False)
 png(file=opt$plot_externalAUC)
 #Plot_externalAUC=mPlot(All_AUCs)
 Plot_externalAUC=qplot(data = All_AUCs, y = AUC, x = Class, geom = "jitter", size = I(2), colour = I("#46AFFF"))
