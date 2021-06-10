@@ -84,10 +84,11 @@ LUAD_AUCs=data.frame(AUC=unlist(LUAD_AUCs), stringsAsFactors=False) %>% mutate(C
 ### Step6: Plotting external AUC
 All_AUCs=rbind(NC_AUCs, HCC_AUCs, CRC_AUCs, STAD_AUCs, ESCA_AUCs, LUAD_AUCs)
 png(file=opt$plot_externalAUC)
-Plot_externalAUC=qplot(data = All_AUCs, y = AUC, x = Class, geom = "jitter", size = I(2), colour = I("#46AFFF"))+
-  geom_boxplot(colour = I("black"), alpha = I(0))+
-  theme_bw()+
-  ylab("AUCs within Validation")+
+#Plot_externalAUC=mPlot(All_AUCs)
+Plot_externalAUC=qplot(data = All_AUCs, y = AUC, x = Class, geom = "jitter", size = I(2), colour = I("#46AFFF"))
+  +geom_boxplot(colour = I("black"), alpha = I(0))+
+  +theme_bw()+
+  +ylab("AUCs within Validation")+
   ylim(c(0.4,1.0))
 Plot_externalAUC
 dev.off
