@@ -18,7 +18,7 @@ mPredict=function(ModelList,TestData,Indices,classes.df) {
 } 
 
 mValidate=function(type) {
-Type=c(lapply(DiscoveryIteration, function(x) x$type))
+Type=c(lapply(DiscoveryIteration, function(x) x$[[type]]))
 Type=lapply(Type, function(x) x$Model)
 Models.Validation=list() 
 for(i in 1:length(Type)) {
