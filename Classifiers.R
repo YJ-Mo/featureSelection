@@ -35,7 +35,7 @@ return(Type.AUCs)
 }
 
 mValidate2=function(type) {
-Type=c(lapply(AllIterations.onevEach, function(x) x$type))
+Type=c(lapply(DiscoveryIteration, function(x) x$type))
 Type=lapply(Type, function(x) x$Model)
 Models.Validation=list() 
 for(i in 1:length(Type)) {
