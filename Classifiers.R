@@ -50,6 +50,7 @@ Type.AUCs <- lapply(Models.Validation, function(x) with(x,auc(Class ~ One)))
 rm(Type)
 return(Type.AUCs)
 }
+
 mSplit=function(Count,Label,Num){
   require(dplyr)
   require(caret)
