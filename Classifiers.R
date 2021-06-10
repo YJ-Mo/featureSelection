@@ -78,7 +78,7 @@ mMod=function(Mat,classes.df,Indices){
     LimmaFit=LimmaFit%>%.[order(.$t),]
     TotalRows=nrow(LimmaFit) - 49
     Features=rbind(LimmaFit[1:50,] ,
-                      LimmaFit[TotalRows:nrow(LimmaFit),]
+                      LimmaFit[TotalRows:nrow(LimmaFit),])
     Features=rownames(Features)
 
     Model=train(x=t(TrainData[rownames(TrainData) %in% Features,]), y=factor(NewAnn), trControl=Features.CVparam, method="glmnet" , tuneGrid=expand.grid(.alpha=c(0,0.2,0.5,0.8,1),.lambda=seq(0,0.05,by=0.01)))
