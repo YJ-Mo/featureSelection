@@ -21,7 +21,7 @@ option_list <- list(
     make_option(c("-f","--fold"), help="number of cross validation fold",type="numeric",default="10"),
     make_option(c("-i","--iteration"), help="number of iterations",type="numeric",default="3"),
     make_option(c("-p","--partition"), help="number of partition times of discovery count matrix",type="numeric",default="100"),
-    make_option(c("-o","--output"), help="path to output AUC plots and data frames"type="character",default="."),
+    make_option(c("-o","--output"), help="path to output AUC plots and data frames",type="character",default="."),
     make_option(c("-d","--degene"), help="number of DE genes",type="numeric",default="200")
 )
 opt <- parse_args(OptionParser(option_list=option_list))
