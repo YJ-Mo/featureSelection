@@ -51,7 +51,7 @@ for(i in 1:opt$partition) {
 ### Step3: Cross validation on splited matrix
 Classes.df <- Splits$df
 TestPerformance.list <- list()
-for(i in 1:100) {
+for(i in 1:opt$partition) {
     TestPerformance.list[[i]]=mPredict(ModelList=DiscoveryIteration[[i]],TestData=DiscoveryCount,Indices=Splits$samples[[i]], classes.df = Classes.df)}
 AUCs.Discovery <- GetAUC.ClassWise2(TestPerformance.list)
 write.table(AUCs.Discovery,paste(opt$output,"/AUC_Discovery.txt"),sep="\t",quote=FALSE)
