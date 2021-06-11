@@ -28,7 +28,7 @@ for(i in 1:length(Type)) {
   Models.Validation[[i]] <- Predictions
   message(i)
 }
-Models.Validation <- lapply(Models.Validation, function(x) x%>%as.data.frame%>%mutate(Class = ifelse(ValidationLabel$label == [[type]],1,0)))
+Models.Validation <- lapply(Models.Validation, function(x) x%>%as.data.frame%>%mutate(Class = ifelse(ValidationLabels$label == type,1,0)))
 Type.AUCs <- lapply(Models.Validation, function(x) with(x,auc(Class ~ One)))
 rm(Type)
 return(Type.AUCs)
