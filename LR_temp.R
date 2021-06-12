@@ -62,7 +62,7 @@ TestPerformance.list <- list()
 for(i in 1:opt$partition) {
     TestPerformance.list[[i]]=mPredict(ModelList=DiscoveryIteration[[i]],TestData=DiscoveryCount,Indices=Splits$samples[[i]], classes.df = Classes.df)}
 AUCs.Discovery <- GetAUC.ClassWise2(TestPerformance.list)
-write.table(AUCs.Discovery,paste(opt$output,"/AUC_Discovery.txt"),sep="\t",quote=FALSE)
+write.table(AUCs.Discovery,paste(opt$output,"/AUC_Discovery.txt",sep=""),sep="\t",quote=FALSE)
 Counts.Samples <- count(Labels,label) %>% mutate(Frac = n/373)
 
 ### Step4: Ploting inner AUC
