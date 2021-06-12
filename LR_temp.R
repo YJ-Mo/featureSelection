@@ -30,7 +30,7 @@ opt <- parse_args(OptionParser(option_list=option_list))
 source(opt$classifier)
 
 ### Step1: Input discovery count matrix file and label file
-if (opt$validation != "stupid"){
+if (opt$validationCount != "stupid"){
 DiscoveryCount=read.table(opt$count,sep='\t',header=TRUE,row.names=1)
 Labels=read.table(opt$label,sep='\t',header=TRUE)
 ValidationCount=read.table(opt$validationCount,sep='\t',header=TRUE,row.names=1)
