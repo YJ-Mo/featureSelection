@@ -86,7 +86,7 @@ plot_innerAUC=ggboxplot(data=AUCs.Discovery,x='ID',y='AUC',fill='ID',bxp.errorba
     axis.line.y = element_line(colour = 'black', linetype = 'solid'),
     panel.border = element_rect(linetype = 'solid', size = 1.2, fill = NA)
 )
-Plot_innerAUC
+plot_innerAUC
 while (!is.null(dev.list()))  dev.off()
 
 ### Step5: Predict on validation matrix
@@ -125,5 +125,5 @@ plot_externalAUC=ggboxplot(data=All_AUCs,x=Class,y='AUC',fill='ID',bxp.errorbar=
     axis.line.y = element_line(colour = 'black', linetype = 'solid'),
     panel.border = element_rect(linetype = 'solid', size = 1.2, fill = NA)
 )
-Plot_externalAUC
+plot_externalAUC
 while (!is.null(dev.list()))  dev.off()
