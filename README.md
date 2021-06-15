@@ -1,6 +1,6 @@
 # featureSelection
 
-## Edited by Y.MO, last updates on 2021/06/11
+## Edited by Y.MO, last updates on 2021/06/15
 
 ## Main file descriptions:
 
