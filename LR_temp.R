@@ -7,8 +7,10 @@ library("extrafont")
 library("ggplot2")
 library("ggpubr")
 library("ggsci")
+library("ggsignif")
 library("glmnet")
 library("limma")
+library("magrittr")
 library("NMF")
 library("optparse")
 library("pROC")
@@ -67,11 +69,23 @@ Counts.Samples <- count(Labels,label) %>% mutate(Frac = n/373)
 
 ### Step4: Ploting inner AUC
 png(file=paste(opt$output,"/inner_AUC.png",sep=""))
-Plot_innerAUC=qplot(data=AUCs.Discovery,y=AUC,x=ID,geom="jitter",size=I(2), colour=I("#FF6666"))+
-  geom_boxplot(colour=I("black"), alpha=I(0))+
-  theme_bw()+
-  ylab("AUCs within Discovery")+
-  xlab("Cancer types")
+plot_innerAUC=ggboxplot(data=AUCs.Discovery,x='ID',y='AUC',fill='ID',bxp.errorbar=T,bxp.errorbar.width=0.2,palette="npg")+
+  labs(titles='Inner AUC',
+       subtitle='AUCs within DIscovery Cross Validation',
+       caption='Data on gene set1',
+       x='Cancer Type',
+       y='AUC'
+       )+
+  theme(
+    plot.title = element_text(colour = 'black', size = 16, hjust = 0.5),
+    plot.subtitle = element_text(color = 'black', size=16,hjust = 0.5),
+    plot.caption = element_text(color = 'black', size = 16, face = 'italic', hjust = 1),
+    legend.title = element_text(color = 'black', size = 16),
+    legend.text = element_text(color = 'black', size = 16),
+    axis.line.x = element_line(colour = 'black', linetype = 'solid'),
+    axis.line.y = element_line(colour = 'black', linetype = 'solid'),
+    panel.border = element_rect(linetype = 'solid', size = 1.2, fill = NA)
+)
 Plot_innerAUC
 while (!is.null(dev.list()))  dev.off()
 
@@ -94,10 +108,22 @@ All_AUCs=rbind(NC_AUCs, HCC_AUCs, CRC_AUCs, STAD_AUCs, ESCA_AUCs, LUAD_AUCs)
 write.table(All_AUCs,paste(opt$output,"/AUC_Validation.txt",sep=""),sep="\t",quote=FALSE)
 png(file=paste(opt$output,"/external_AUC.png",sep=""))
 #Plot_externalAUC=mPlot(All_AUCs)
-Plot_externalAUC=qplot(data = All_AUCs, y = AUC, x = Class, geom = "jitter", size = I(2), colour = I("#46AFFF"))+
-  geom_boxplot(colour = I("black"), alpha = I(0))+
-  theme_bw()+
-  ylab("AUCs within Validation")+
-  ylim(c(0.4,1.0))
+plot_externalAUC=ggboxplot(data=All_AUCs,x=Class,y='AUC',fill='ID',bxp.errorbar=T,bxp.errorbar.width=0.2,palette="npg")+
+  labs(titles='Inner AUC',
+       subtitle='AUCs within DIscovery Cross Validation',
+       caption='Data on gene set1',
+       x='Cancer Type',
+       y='AUC'
+       )+
+  theme(
+    plot.title = element_text(colour = 'black', size = 16, hjust = 0.5),
+    plot.subtitle = element_text(color = 'black', size=16,hjust = 0.5),
+    plot.caption = element_text(color = 'black', size = 16, face = 'italic', hjust = 1),
+    legend.title = element_text(color = 'black', size = 16),
+    legend.text = element_text(color = 'black', size = 16),
+    axis.line.x = element_line(colour = 'black', linetype = 'solid'),
+    axis.line.y = element_line(colour = 'black', linetype = 'solid'),
+    panel.border = element_rect(linetype = 'solid', size = 1.2, fill = NA)
+)
 Plot_externalAUC
 while (!is.null(dev.list()))  dev.off()
