@@ -4,6 +4,7 @@ library("doParallel")
 library("dplyr")
 library("edgeR")
 library("extrafont")
+library("ggboxplot")
 library("ggplot2")
 library("ggpubr")
 library("ggsci")
@@ -108,7 +109,7 @@ All_AUCs=rbind(NC_AUCs, HCC_AUCs, CRC_AUCs, STAD_AUCs, ESCA_AUCs, LUAD_AUCs)
 write.table(All_AUCs,paste(opt$output,"/AUC_Validation.txt",sep=""),sep="\t",quote=FALSE)
 png(file=paste(opt$output,"/external_AUC.png",sep=""))
 #Plot_externalAUC=mPlot(All_AUCs)
-plot_externalAUC=ggboxplot(data=All_AUCs,x=Class,y='AUC',fill='ID',bxp.errorbar=T,bxp.errorbar.width=0.2,palette="npg")+
+plot_externalAUC=ggboxplot(data=All_AUCs,x='Class',y='AUC',fill='ID',bxp.errorbar=T,bxp.errorbar.width=0.2,palette="npg")+
   labs(titles='Inner AUC',
        subtitle='AUCs within DIscovery Cross Validation',
        caption='Data on gene set1',
