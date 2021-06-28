@@ -15,7 +15,8 @@ mPredict=function(ModelList,TestData,Indices,classes.df) {
     Predictions.list[[i]]=Prediction.classProbs}
   names(Predictions.list)=OutputNames
   return(Predictions.list)
-} 
+}
+}
 
 mValidate=function(type) {
 Type=c(lapply(DiscoveryIteration, function(x) x[[type]]))
